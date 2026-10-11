@@ -23,9 +23,15 @@ Abrir http://localhost:3100. `npm test` valida la lógica y `npm run check` comp
 - Catálogo público de https://www.inmobiliariaalbertoalfaro.com.pe/ y vinculación de la propiedad de interés.
 - Origen de consulta: Web, Facebook o WhatsApp directo. Facebook indicado: https://www.facebook.com/share/19gTtbJboX/.
 
-El servidor local consulta la fuente pública mediante `/api/catalog`. Si no responde, la interfaz utiliza `dist/catalog.json`, una copia fechada de los campos públicos del catálogo. En la publicación estática de prueba se utiliza esa copia y se indica su fecha; todavía no hay actualización automática del catálogo publicado. La web no devuelve cabeceras CORS para acceder directamente desde otro dominio, por eso la versión real requiere una consulta desde el backend.
+El servidor local y la función de Vercel consultan la fuente pública mediante `/api/catalog`. Si no responde, la interfaz utiliza `dist/catalog.json`, una copia fechada de los campos públicos del catálogo. La publicación estática original de Sites utiliza esa copia. En Vercel, la función consulta el catálogo actual y permite una caché de cinco minutos, con hasta diez minutos adicionales mientras se revalida. La web no devuelve cabeceras CORS para acceder directamente desde otro dominio, por eso se consulta desde el backend.
 
 Etiquetar un contacto con «Facebook» no conecta Messenger ni determina automáticamente el origen de un WhatsApp. La atribución requiere información del anuncio, un enlace o un mensaje identificable.
+
+## Desplegar en Vercel
+
+Importar el repositorio privado `cpumaricramoori01-projx/alfaro-crm-whatsapp` en un proyecto nuevo. Usar la raíz del repositorio, sin subcarpetas. `vercel.json` configura automáticamente Framework «Other», salida `dist` y comprobaciones de código antes de publicar. No se requieren variables de entorno para esta demostración ni para el catálogo público. No vincular este directorio al proyecto de la intranet.
+
+El despliegue publica la interfaz y `/api/catalog`; los chats continúan siendo simulados y almacenados en el navegador. Al cambiar de dominio, los datos locales de la prueba anterior no se trasladan automáticamente.
 
 Los datos permanecen en este navegador; no hay usuarios, servidor de datos ni sincronización entre dispositivos. No usar esta demostración para almacenar conversaciones reales.
 
