@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createHmac} from 'node:crypto';
 import {serveWebhook} from '../api/whatsapp-webhook.mjs';
 import {serveInbox} from '../api/whatsapp-inbox.mjs';
-import {storeEvent,rawBody} from '../lib/whatsapp.mjs';
+import {storeEvent,rawBody,redis,storageConfig,configured} from '../lib/whatsapp.mjs';
 const env={WHATSAPP_APP_SECRET:'app-secret',WHATSAPP_PHONE_NUMBER_ID:'123',UPSTASH_REDIS_REST_URL:'https://test.upstash.io',UPSTASH_REDIS_REST_TOKEN:'private',CRM_INBOX_TOKEN:'x'.repeat(64)};
 const payload={object:'whatsapp_business_account',entry:[{changes:[{field:'messages',value:{metadata:{phone_number_id:'123'},contacts:[{wa_id:'51900000101',profile:{name:'Cliente'}}],messages:[{id:'wamid.1',from:'51900000101',timestamp:'1791842400',type:'text',text:{body:'Hola'}}]}}]}]};
 const body=Buffer.from(JSON.stringify(payload));
@@ -20,3 +20,13 @@ test('authorized inbox paginates and does not expose raw event',async()=>{const 
 test('production storage request uses atomic transaction and detects partial command errors',async()=>{const original=globalThis.fetch;try{globalThis.fetch=async(url,options)=>{assert.equal(url.pathname,'/multi-exec');const commands=JSON.parse(options.body);assert.equal(commands[1][3],'NX');return {ok:true,json:async()=>commands.map(()=>({result:'OK'}))}};await storeEvent(payload,body,env);globalThis.fetch=async()=>({ok:true,json:async()=>[{error:'failure'}]});await assert.rejects(storeEvent(payload,body,env),/storage-error/)}finally{globalThis.fetch=original}});
 
 test('Vercel lazy JSON getter is not invoked; signed raw stream is preserved',async()=>{const {PassThrough}=await import('node:stream');const stream=new PassThrough();Object.defineProperty(stream,'body',{get(){assert.fail('must not parse lazy JSON')}});const read=rawBody(stream);stream.end(body);assert.deepEqual(await read,body)});
+
+test('Vercel KV variables authenticate reads and atomic writes with the write token',async()=>{
+  const kv={WHATSAPP_PHONE_NUMBER_ID:'123',KV_REST_API_URL:'https://kv.upstash.io',KV_REST_API_TOKEN:'kv-write',KV_REST_API_READ_ONLY_TOKEN:'read-only'};
+  assert(configured(kv));assert.equal(storageConfig({KV_REST_API_URL:kv.KV_REST_API_URL,UPSTASH_REDIS_REST_TOKEN:'other'}),null);
+  assert.equal(storageConfig({...kv,UPSTASH_REDIS_REST_URL:'https://direct.upstash.io',UPSTASH_REDIS_REST_TOKEN:'direct'}).token,'direct');
+  const original=globalThis.fetch;let requests=0;
+  try{globalThis.fetch=async(url,options)=>{requests++;assert.equal(url.hostname,'kv.upstash.io');assert.equal(options.headers.Authorization,'Bearer kv-write');const command=JSON.parse(options.body);return {ok:true,json:async()=>url.pathname==='/multi-exec'?command.map(()=>({result:'OK'})):{result:[]}}};
+    await redis(['ZREVRANGE','alfaro:wa:messages',0,99],kv);await storeEvent(payload,body,kv);assert.equal(requests,2);
+  }finally{globalThis.fetch=original}
+});

@@ -17,6 +17,8 @@ Configurar exclusivamente en `pumas1/alfaro-crm-whatsapp`:
 
 Mantener secretos en variables de servidor. No colocarlos en GitHub, el frontend, capturas ni el chat. La base no debe reutilizar credenciales ni datos de la intranet. No utilizar una base temporal que expire ni habilitar expulsión automática de claves: esta base guarda conversaciones. Configurar persistencia y copias de seguridad según el proveedor.
 
+Si conectas Upstash con el prefijo `KV`, la integración crea `KV_REST_API_URL` y `KV_REST_API_TOKEN`. El CRM acepta esa pareja directamente: no hace falta duplicar variables. No utilizar `KV_REST_API_READ_ONLY_TOKEN`, porque el webhook necesita escribir. Si existen ambas parejas completas, se utiliza `UPSTASH_REDIS_REST_*`.
+
 Después de guardar las variables, publicar esta versión de código en Vercel. Un Redeploy del código viejo solo cambia variables; no instala esta implementación.
 
 ## Meta y prueba completa
