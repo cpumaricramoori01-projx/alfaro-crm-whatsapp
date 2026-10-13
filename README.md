@@ -1,6 +1,6 @@
 # Alfaro · Consola WhatsApp
 
-CRM independiente de prueba para consultas inmobiliarias. Esta versión utiliza **datos simulados** y guarda los cambios en el navegador. No está conectada a WhatsApp, no envía mensajes reales y no comparte datos con la intranet.
+CRM independiente para consultas inmobiliarias. Incluye recepción de WhatsApp en el servidor y una bandeja privada de lectura en `/real.html`, pendiente de configurar y validar en producción. Ver [ACTIVAR-WHATSAPP.md](ACTIVAR-WHATSAPP.md). La interfaz principal sigue siendo una demostración. Esta versión utiliza **datos simulados** y guarda los cambios en el navegador. No está conectada a WhatsApp, no envía mensajes reales y no comparte datos con la intranet.
 
 ## Probar
 
@@ -41,6 +41,12 @@ Para probar el número personal que ya usa WhatsApp Business, confirmar primero 
 
 Documentación: https://developers.facebook.com/docs/whatsapp/embedded-signup/custom-flows/onboarding-business-app-users/
 
-La integración requiere backend autenticado, almacenamiento duradero, recepción de webhooks con verificación de firma, deduplicación por identificador de mensaje, cola de envíos y control de las reglas de mensajería de Meta. Los tokens y el secreto de la aplicación deben permanecer en el servidor. La API y el webhook no están implementados en esta versión.
+La integración requiere backend autenticado, almacenamiento duradero, recepción de webhooks con verificación de firma, deduplicación por identificador de mensaje, cola de envíos y control de las reglas de mensajería de Meta. Los tokens y el secreto de la aplicación deben permanecer en el servidor. La recepción y consulta privada se implementan en esta etapa; el envío y los usuarios de equipo siguen pendientes.
 
 El CRM y la intranet pueden alojarse en cuentas GitHub diferentes. Una futura API autorizada puede permitir consultar las propiedades de la intranet; no se deben compartir sus credenciales de base de datos.
+
+## Recepción de WhatsApp
+
+GET permite verificar el webhook. POST verifica la firma de Meta y guarda los eventos en una base Upstash Redis independiente, con deduplicación por ID de mensaje. Si falta configuración o falla el guardado devuelve 503. `/real.html` permite consultar mensajes con la clave privada `CRM_INBOX_TOKEN`. No envía respuestas.
+
+Configuración y pasos de activación: [ACTIVAR-WHATSAPP.md](ACTIVAR-WHATSAPP.md).
